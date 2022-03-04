@@ -22,8 +22,11 @@
 
 package tk.sciwhiz12.concord;
 
+import net.minecraft.network.Connection;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.network.ConnectionData;
+import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.event.EventNetworkChannel;
 
@@ -49,5 +52,12 @@ public class ModPresenceTracker {
 
     public static boolean isModPresent(@Nullable ServerPlayer client) {
         return client != null && CHANNEL.isRemotePresent(client.connection.getConnection());
+    }
+
+    @Nullable
+    public static String getChannelVersion(Connection connection) {
+        @Nullable final ConnectionData connectionData = NetworkHooks.getConnectionData(connection);
+        if (connectionData == null) return null;
+        return connectionData.getChannels().get(CHANNEL_NAME);
     }
 }
