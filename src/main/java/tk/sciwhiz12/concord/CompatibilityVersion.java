@@ -179,8 +179,6 @@ public final class CompatibilityVersion {
 
     @Override
     public String toString() {
-        return "CompatibilityVersion{"
-                + versions.values().stream().map(Object::toString).collect(Collectors.joining(VERSION_SEPARATOR))
-                + '}';
+        return versions.values().stream().map(Object::toString).collect(Collectors.joining(VERSION_SEPARATOR));
     }
 }

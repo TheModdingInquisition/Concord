@@ -41,7 +41,7 @@ public class ModPresenceTracker {
     public static final ResourceLocation CHANNEL_NAME = new ResourceLocation(Concord.MODID, "exists");
     public static final EventNetworkChannel CHANNEL = NetworkRegistry.ChannelBuilder
         .named(CHANNEL_NAME)
-        .networkProtocolVersion(() -> "yes")
+        .networkProtocolVersion(() -> CompatibilityVersion.current().toString())
         .clientAcceptedVersions(version -> true)
         .serverAcceptedVersions(version -> true)
         .eventNetworkChannel();
