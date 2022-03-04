@@ -46,9 +46,9 @@ public enum FeatureVersion {
      */
     TRANSLATIONS("translations", "1.0.0"),
     /**
-     * The custom fonts feature.
+     * The custom icon fonts feature.
      */
-    FONTS("fonts", "1.0.0");
+    ICONS("icons", "1.0.0");
 
     private final String featureName;
     private final ArtifactVersion currentVersion;

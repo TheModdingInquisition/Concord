@@ -44,8 +44,11 @@ import net.minecraft.network.protocol.game.ClientboundChatPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import org.apache.maven.artifact.versioning.VersionRange;
+import tk.sciwhiz12.concord.CompatibilityVersion;
 import tk.sciwhiz12.concord.ConcordConfig;
-import tk.sciwhiz12.concord.ModPresenceTracker;
+import tk.sciwhiz12.concord.FeatureVersion;
+import tk.sciwhiz12.concord.util.LambdaUtil;
 import tk.sciwhiz12.concord.util.TranslationUtil;
 
 import javax.annotation.Nullable;
@@ -60,9 +63,13 @@ import static net.minecraft.ChatFormatting.AQUA;
 import static net.minecraft.ChatFormatting.DARK_GRAY;
 import static net.minecraft.ChatFormatting.GRAY;
 import static net.minecraft.ChatFormatting.WHITE;
+import static tk.sciwhiz12.concord.CompatibilityVersion.currentCompatible;
 import static tk.sciwhiz12.concord.Concord.MODID;
+import static tk.sciwhiz12.concord.ModPresenceTracker.getChannelVersion;
 
 public class Messaging {
+    private static final VersionRange ICONS_FONT_RANGE = LambdaUtil.uncheck(() -> VersionRange.createFromVersionSpec("[1.0.0,)"));
+    private static final VersionRange TRANSLATIONS_RANGE = LambdaUtil.uncheck(() -> VersionRange.createFromVersionSpec("[1.0.0,)"));
     public static final ResourceLocation ICONS_FONT = new ResourceLocation(MODID, "icons");
     public static final TextColor CROWN_COLOR = TextColor.fromRgb(0xfaa61a);
 
@@ -211,14 +218,22 @@ public class Messaging {
         Supplier<TranslatableComponent> withIcons = Suppliers.memoize(() -> createMessage(true, crownVisibility, member, message));
         TranslatableComponent withoutIcons = createMessage(false, crownVisibility, member, message);
 
-        final boolean lazyTranslate = ConcordConfig.LAZY_TRANSLATIONS.get();
-        final boolean useIcons = ConcordConfig.USE_CUSTOM_FONT.get();
+        final boolean lazyTranslateAll = ConcordConfig.LAZY_TRANSLATIONS.get();
+        final boolean useIconsAll = ConcordConfig.USE_CUSTOM_FONT.get();
 
         server.sendMessage(withoutIcons, Util.NIL_UUID);
 
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            final String netVersion = getChannelVersion(player.connection.connection);
+            final CompatibilityVersion version = netVersion != null ? CompatibilityVersion.fromString(netVersion) : null;
+
+            final boolean lazyTranslate = lazyTranslateAll && currentCompatible(version,
+                    FeatureVersion.TRANSLATIONS, TRANSLATIONS_RANGE);
+            final boolean useIcons = useIconsAll && currentCompatible(version,
+                    FeatureVersion.ICONS, ICONS_FONT_RANGE);
+
             MutableComponent sendingText;
-            if ((lazyTranslate || useIcons) && ModPresenceTracker.isModPresent(player)) {
+            if (lazyTranslate || useIcons) {
                 TranslatableComponent translate = useIcons ? withIcons.get() : withoutIcons;
                 sendingText = lazyTranslate ? translate : TranslationUtil.eagerTranslate(translate);
             } else {

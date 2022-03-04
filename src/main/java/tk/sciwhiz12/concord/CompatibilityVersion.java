@@ -105,7 +105,14 @@ public final class CompatibilityVersion {
         return new CompatibilityVersion(parsedVersions);
     }
 
-    public static boolean currentCompatible(CompatibilityVersion other, FeatureVersion version, VersionRange acceptableRange) {
+    public static boolean currentCompatible(@Nullable String other, FeatureVersion version, VersionRange acceptableRange) {
+        if (other == null || other.isBlank()) return false;
+        final CompatibilityVersion otherVersion = CompatibilityVersion.fromString(other);
+        return currentCompatible(otherVersion, version, acceptableRange);
+    }
+
+    public static boolean currentCompatible(@Nullable CompatibilityVersion other, FeatureVersion version, VersionRange acceptableRange) {
+        if (other == null) return false;
         return CURRENT.get().isCompatible(other, version, acceptableRange);
     }
 
@@ -125,11 +132,12 @@ public final class CompatibilityVersion {
     }
 
     public boolean isCompatible(CompatibilityVersion other, FeatureVersion version, VersionRange acceptableRange) {
-        return isCompatibleRaw(other, FeatureVersion.ROOT, UNBOUNDED_RANGE) // Root feature must be compatible
-                && isCompatibleRaw(other, version, acceptableRange);
+        // Root feature's major versions must be compatible; don't check the minor version
+        return isCompatibleRaw(other, FeatureVersion.ROOT, UNBOUNDED_RANGE, false)
+                && isCompatibleRaw(other, version, acceptableRange, true);
     }
 
-    private boolean isCompatibleRaw(CompatibilityVersion other, FeatureVersion version, VersionRange acceptableRange) {
+    private boolean isCompatibleRaw(CompatibilityVersion other, FeatureVersion version, VersionRange acceptableRange, boolean checkMinorVersion) {
         @Nullable final ArtifactVersion ourVersion = this.get(version);
         @Nullable final ArtifactVersion theirVersion = other.get(version);
         // If we don't have that feature nor does the other side, then incompatible
@@ -147,7 +155,13 @@ public final class CompatibilityVersion {
         }
 
         // Their version must be acceptable in our version range
-        return acceptableRange.containsVersion(theirVersion);
+        if (!acceptableRange.containsVersion(theirVersion)) {
+            return false;
+        }
+
+        // If we are checking minor versions and the minor versions are mismatched, say we're not compatible.
+        // Otherwise, we assume compatible (regardless of the patch version)
+        return !checkMinorVersion || ourVersion.getMinorVersion() == theirVersion.getMinorVersion();
     }
 
     @Override
